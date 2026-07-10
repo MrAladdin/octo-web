@@ -280,18 +280,20 @@ export default function IssueDetailPage({ issueId, onChanged }: IssueDetailPageP
     }
   };
 
-  // 附件渲染(评论/issue 共用):图片内联缩略,其它为带图标的下载链接(用短时 download_url)。
+  // 附件渲染(评论/issue 共用):位图内联缩略;SVG/其它为下载链接。
+  // 安全:SVG 走 <img> 不执行脚本,但用 <a href> 当文档打开 SVG 可触发 stored XSS(内联脚本),
+  // 故 image/svg+xml 排除出内联分支,且所有链接加 download 强制下载而非导航打开(中和该向量)。
   const renderAttachments = (atts: Attachment[] | null | undefined) => {
     if (!atts?.length) return null;
     return (
       <div className="loop-atts">
         {atts.map((a) =>
-          a.content_type.startsWith("image/") ? (
-            <a key={a.id} href={a.download_url} target="_blank" rel="noreferrer" className="loop-att loop-att--img">
+          a.content_type.startsWith("image/") && a.content_type !== "image/svg+xml" ? (
+            <a key={a.id} href={a.download_url} target="_blank" rel="noreferrer" download={a.filename} className="loop-att loop-att--img">
               <img src={a.download_url} alt={a.filename} />
             </a>
           ) : (
-            <a key={a.id} href={a.download_url} target="_blank" rel="noreferrer" className="loop-att">
+            <a key={a.id} href={a.download_url} target="_blank" rel="noreferrer" download={a.filename} className="loop-att">
               <Paperclip size={12} />
               <span>{a.filename}</span>
             </a>
